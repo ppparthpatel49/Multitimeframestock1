@@ -1,0 +1,80 @@
+name: TDMB Weekly Scan
+
+on:
+  schedule:
+    # Friday 15:20 IST = 09:50 UTC
+    - cron: '50 9 * * 5'
+    # Sunday 10:00 IST resend = 04:30 UTC
+    - cron: '30 4 * * 0'
+    # Monday 9:15 IST pre-market = 03:45 UTC
+    - cron: '45 3 * * 1'
+  workflow_dispatch:
+    inputs:
+      universe:
+        description: 'Universe'
+        required: false
+        default: 'NIFTY500'
+        type: choice
+        options:
+          - NIFTY500
+          - NIFTY200
+          - CUSTOM
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: python/requirements.txt
+
+      - name: Install deps
+        run: |
+          pip install -r python/requirements.txt
+
+      - name: Run TDMB scan + Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ACCOUNT_SIZE: ${{ vars.ACCOUNT_SIZE || '1000000' }}
+          RISK_PER_TRADE: ${{ vars.RISK_PER_TRADE || '2.0' }}
+          MAX_POS_PCT: ${{ vars.MAX_POS_PCT || '20.0' }}
+          UNIVERSE_MODE: ${{ github.event.inputs.universe || 'NIFTY500' }}
+          SL_ATR_MULT: '1.8'
+          TRAIL_ATR_MULT: '3.0'
+          WEEKLY_LOOKBACK: '12'
+          MIN_ATR_PCT: '1.5'
+          MAX_ATR_PCT: '6.0'
+          MIN_VOLUME_CRORE: '10'
+          TELEGRAM_MAX_SIGNALS: '20'
+          TELEGRAM_MAX_WATCH: '20'
+          TELEGRAM_MAX_ELIGIBLE: '30'
+        working-directory: python
+        run: |
+          python main.py --scan --send --universe ${UNIVERSE_MODE:-NIFTY500}
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdmb-scan-${{ github.run_id }}
+          path: |
+            python/output/last_scan.json
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## TDMB Scan Result" >> $GITHUB_STEP_SUMMARY
+          if [ -f python/output/last_scan.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            head -120 python/output/last_scan.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
