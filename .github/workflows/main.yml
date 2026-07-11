@@ -4,9 +4,9 @@ on:
   schedule:
     # Friday 15:20 IST = 09:50 UTC
     - cron: '50 9 * * 5'
-    # Sunday 10:00 IST resend = 04:30 UTC
+    # Sunday 10:00 IST = 04:30 UTC
     - cron: '30 4 * * 0'
-    # Monday 9:15 IST pre-market = 03:45 UTC
+    # Monday 9:15 IST = 03:45 UTC
     - cron: '45 3 * * 1'
   workflow_dispatch:
     inputs:
@@ -23,21 +23,54 @@ on:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Find project root
+        id: proj
+        run: |
+          # support repo root = project root, OR repo root contains topdown-trader/ subfolder
+          if [ -f "python/requirements.txt" ]; then
+            echo "root=." >> $GITHUB_OUTPUT
+            echo "py_dir=python" >> $GITHUB_OUTPUT
+          elif [ -f "topdown-trader/python/requirements.txt" ]; then
+            echo "root=topdown-trader" >> $GITHUB_OUTPUT
+            echo "py_dir=topdown-trader/python" >> $GITHUB_OUTPUT
+          else
+            # find first requirements.txt
+            REQ=$(find . -name "requirements.txt" -type f | head -1)
+            if [ -n "$REQ" ]; then
+              ROOT=$(dirname $(dirname "$REQ"))
+              PYDIR=$(dirname "$REQ")
+              echo "root=$ROOT" >> $GITHUB_OUTPUT
+              echo "py_dir=$PYDIR" >> $GITHUB_OUTPUT
+              echo "Found $REQ -> root $ROOT"
+            else
+              echo "root=." >> $GITHUB_OUTPUT
+              echo "py_dir=python" >> $GITHUB_OUTPUT
+            fi
+          fi
+          cat $GITHUB_OUTPUT
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-          cache-dependency-path: python/requirements.txt
+          cache-dependency-path: |
+            **/requirements.txt
 
       - name: Install deps
+        working-directory: ${{ steps.proj.outputs.py_dir }}
         run: |
-          pip install -r python/requirements.txt
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip list
 
       - name: Run TDMB scan + Telegram
         env:
@@ -56,7 +89,8 @@ jobs:
           TELEGRAM_MAX_SIGNALS: '20'
           TELEGRAM_MAX_WATCH: '20'
           TELEGRAM_MAX_ELIGIBLE: '30'
-        working-directory: python
+          PYTHONUNBUFFERED: '1'
+        working-directory: ${{ steps.proj.outputs.py_dir }}
         run: |
           python main.py --scan --send --universe ${UNIVERSE_MODE:-NIFTY500}
 
@@ -66,15 +100,20 @@ jobs:
         with:
           name: tdmb-scan-${{ github.run_id }}
           path: |
-            python/output/last_scan.json
+            **/output/last_scan.json
+          if-no-files-found: warn
           retention-days: 30
 
       - name: Summary
         if: always()
         run: |
           echo "## TDMB Scan Result" >> $GITHUB_STEP_SUMMARY
-          if [ -f python/output/last_scan.json ]; then
+          FILE=$(find . -name "last_scan.json" | head -1)
+          if [ -f "$FILE" ]; then
+            echo "Found: $FILE" >> $GITHUB_STEP_SUMMARY
             echo '```json' >> $GITHUB_STEP_SUMMARY
-            head -120 python/output/last_scan.json >> $GITHUB_STEP_SUMMARY
+            head -150 "$FILE" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No scan file found" >> $GITHUB_STEP_SUMMARY
           fi
