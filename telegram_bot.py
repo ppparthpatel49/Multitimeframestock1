@@ -109,12 +109,37 @@ def format_scan_message(data, long=False):
     return chunks if long else chunks[0] if chunks else "\n".join(header)
 
 async def send_messages(chat_id, messages):
-    app = ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).build()
+    from telegram.request import HTTPXRequest
+    from telegram.error import TimedOut, NetworkError, RetryAfter
+    # longer timeouts for CI / GitHub Actions
+    request = HTTPXRequest(connection_pool_size=8, read_timeout=30.0, write_timeout=30.0, connect_timeout=20.0, pool_timeout=10.0)
+    app = ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).request(request).build()
     try:
-        for msg in messages:
-            if msg.strip():
-                await app.bot.send_message(chat_id=chat_id, text=msg[:4096])
-                await asyncio.sleep(0.4)
+        for idx, msg in enumerate(messages, 1):
+            if not msg or not msg.strip():
+                continue
+            text = msg[:4096]
+            # retry 3x with backoff
+            for attempt in range(4):
+                try:
+                    await app.bot.send_message(chat_id=chat_id, text=text, disable_web_page_preview=True)
+                    break
+                except RetryAfter as ra:
+                    wait = int(getattr(ra, 'retry_after', 5))
+                    await asyncio.sleep(wait + 1)
+                    continue
+                except (TimedOut, NetworkError, Exception) as e:
+                    if attempt == 3:
+                        print(f"Telegram send failed part {idx} after retries: {e}")
+                        # try to send error notice, ignore failures
+                        try:
+                            await app.bot.send_message(chat_id=chat_id, text=f"⚠️ TDMB: part {idx} failed to deliver: {e}")
+                        except Exception:
+                            pass
+                        break
+                    await asyncio.sleep(2 + attempt*3)
+                    continue
+            await asyncio.sleep(0.8)
     finally:
         await app.shutdown()
 
