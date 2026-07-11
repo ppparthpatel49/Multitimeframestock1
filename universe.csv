@@ -1,0 +1,30 @@
+symbol,name,sector
+RELIANCE,Reliance Industries,Energy
+TCS,Tata Consultancy Services,IT
+HDFCBANK,HDFC Bank,Banking
+ICICIBANK,ICICI Bank,Banking
+INFY,Infosys,IT
+HINDUNILVR,Hindustan Unilever,FMCG
+SBIN,State Bank of India,Banking
+BHARTIARTL,Bharti Airtel,Telecom
+ITC,ITC,FMCG
+LT,Larsen & Toubro,Infra
+KOTAKBANK,Kotak Mahindra Bank,Banking
+AXISBANK,Axis Bank,Banking
+ASIANPAINT,Asian Paints,Paint
+MARUTI,Maruti Suzuki,Auto
+BAJFINANCE,Bajaj Finance,Finance
+TATAMOTORS,Tata Motors,Auto
+SUNPHARMA,Sun Pharma,Pharma
+NTPC,NTPC,Power
+POWERGRID,Power Grid,Power
+ULTRACEMCO,UltraTech Cement,Cement
+TITAN,Titan,Consumer
+ADANIENT,Adani Enterprises,Conglomerate
+ADANIPORTS,Adani Ports,Logistics
+WIPRO,Wipro,IT
+ONGC,ONGC,Energy
+# --- Add your own below, NSE symbol without .NS ---
+# Example:
+# IDEA,Vodafone Idea,Telecom
+# ZOMATO,Zomato,Consumer
