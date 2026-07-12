@@ -1,9 +1,9 @@
 name: TDMB Premium Scan
 on:
   schedule:
-    - cron: '50 9 * * 5' # Friday 15:20 IST
-    - cron: '30 4 * * 0' # Sunday 10:00 IST
-    - cron: '45 3 * * 1' # Monday 09:15 IST
+    - cron: '50 9 * * 5'
+    - cron: '30 4 * * 0'
+    - cron: '45 3 * * 1'
   workflow_dispatch:
     inputs:
       universe_mode:
@@ -19,6 +19,8 @@ on:
 jobs:
   scan:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # REQUIRED to save live_trades.csv and trade_journal.csv
     steps:
       - uses: actions/checkout@v4
 
@@ -33,9 +35,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Premium Scan
+      - name: Run Premium Scan & Portfolio Manager
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python main.py --universe ${{ github.event.inputs.universe_mode || 'nifty500' }} --token $TELEGRAM_TOKEN --chat-id $TELEGRAM_CHAT_ID
+
+      - name: Commit and Push Portfolio Updates
+        run: |
+          git config --global user.name "TDMB-Bot"
+          git config --global user.email "bot@tdmb.com"
+          git add live_trades.csv trade_journal.csv
+          git commit -m "Update trades: $(date)" || echo "No changes to commit"
+          git push
