@@ -1,46 +1,36 @@
-#!/usr/bin/env python3
-import argparse, asyncio, json, os
-from scanner import scan_universe
-from telegram_bot import send_scan, format_scan_message, send_long_message
+import argparse
+import asyncio
+import datetime
+from python.scanner import scan_universe
+from python.telegram_bot import send_premium_report
+from python.stock_universe import load_universe
+from telegram import Bot
+import config
 
-def print_messages(msgs):
-    if isinstance(msgs, list):
-        for i, m in enumerate(msgs, 1):
-            print(f"\n===== PART {i}/{len(msgs)} =====\n")
-            print(m)
-    else:
-        print(msgs)
+async def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--universe", type=str, default="nifty500")
+    parser.add_argument("--chat-id", type=str, required=True)
+    parser.add_argument("--token", type=str, required=True)
+    args = parser.parse_args()
 
-def main():
-    ap = argparse.ArgumentParser(description="TDMB Top-Down Momentum Breakout")
-    ap.add_argument("--scan", action="store_true", help="Run scanner now")
-    ap.add_argument("--send", action="store_true", help="Send Telegram after scan – ALL eligible")
-    ap.add_argument("--send-last", action="store_true", help="Resend last_scan.json")
-    ap.add_argument("--chat-id", type=str, default=None)
-    ap.add_argument("--universe", "-u", choices=["NIFTY500","NIFTY200","CUSTOM"], default=None)
-    ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--all", action="store_true", help="Force send ALL eligible candidates (default on)")
-    args = ap.parse_args()
-
-    if args.send_last:
-        if os.path.exists("output/last_scan.json"):
-            with open("output/last_scan.json") as f:
-                data = json.load(f)
-            msgs = format_scan_message(data, long=True)
-            print_messages(msgs)
-            if args.send:
-                asyncio.run(send_long_message(data, args.chat_id))
-        else:
-            print("No output/last_scan.json found. Run --scan first.")
+    # Load symbols from the universe manager
+    symbols = load_universe(args.universe)
+    
+    if not symbols:
+        print("❌ No symbols found for the selected universe. Exiting.")
         return
 
-    if args.scan or args.send or not (args.scan or args.send or args.send_last):
-        data = scan_universe(mode=args.universe, limit=args.limit)
-        msgs = format_scan_message(data, long=True)
-        print_messages(msgs)
-        if args.send:
-            asyncio.run(send_long_message(data, args.chat_id))
+    print(f"🚀 Starting Premium Scan for {args.universe} ({len(symbols)} stocks)...")
+    
+    end_date = datetime.date.today().strftime("%Y-%m-%d")
+    start_date = (datetime.date.today() - datetime.timedelta(days=365)).strftime("%Y-%m-%d")
+
+    data = scan_universe(symbols, start_date, end_date)
+
+    bot = Bot(token=args.token)
+    await send_premium_report(bot, args.chat_id, data)
+    print(f"✅ Premium report for {args.universe} sent to Telegram!")
 
 if __name__ == "__main__":
-    main()
-
+    asyncio.run(main())
