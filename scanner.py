@@ -61,10 +61,15 @@ def analyze_ticker(symbol, index_close, start, end):
         # --- 3. Relative Strength (RS) Logic ---
         # Align Nifty index close to the stock's close dates
         idx_aligned = index_close.reindex(close.index, method='ffill')
-        rs_line = close / idx_aligned
-        rs_sma = rs_line.rolling(config.RS_SMA_LEN).mean()
         
-        rs_bullish = rs_line.iloc[-1] > rs_sma.iloc[-1]
+        # Performance Comparison (Stock return vs Index return over last 63 days)
+        lookback = 63
+        if len(close) >= lookback:
+            stock_return = (close.iloc[-1] - close.iloc[-lookback]) / close.iloc[-lookback]
+            index_return = (idx_aligned.iloc[-1] - idx_aligned.iloc[-lookback]) / idx_aligned.iloc[-lookback]
+            rs_bullish = stock_return > index_return
+        else:
+            rs_bullish = False
 
         # --- 4. Volume Footprint Logic ---
         avg_vol = volume.rolling(config.VOL_SMA_LEN).mean()
