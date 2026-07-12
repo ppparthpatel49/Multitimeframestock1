@@ -1,5 +1,5 @@
-from telegram import Bot, ParseMode
-from telegram.constants import ParseMode as TelegramParseMode
+from telegram import Bot
+from telegram.constants import ParseMode
 import asyncio
 import config
 
@@ -35,7 +35,7 @@ async def send_premium_report(bot, chat_id, data):
     # 2. Top Signals (Score 3/3)
     if data['signals']:
         sig_text = "🔥 <b>TOP BUY SIGNALS (3/3)</b>\n\n"
-        for s in data['signals'][:10]: # Limit to top 10
+        for s in data['signals'][:10]:
             sig_text += build_premium_signal(s) + "\n"
         msgs.append(sig_text)
 
@@ -50,7 +50,6 @@ async def send_premium_report(bot, chat_id, data):
     if data['eligible']:
         pool_text = "⚪ <b>ELIGIBLE POOL (1/3)</b>\n"
         items = [build_eligible_item(s) for s in data['eligible']]
-        # Chunk pool into groups of 20 to avoid telegram limits
         for i in range(0, len(items), 20):
             pool_text += "\n".join(items[i:i+20]) + "\n"
         msgs.append(pool_text)
@@ -58,7 +57,7 @@ async def send_premium_report(bot, chat_id, data):
     # Send all messages
     for m in msgs:
         try:
-            await bot.send_message(chat_id=chat_id, text=m, parse_mode=TelegramParseMode.HTML)
+            await bot.send_message(chat_id=chat_id, text=m, parse_mode=ParseMode.HTML)
             await asyncio.sleep(0.1)
         except Exception as e:
             print(f"Telegram error: {e}")
