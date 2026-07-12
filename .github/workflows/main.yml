@@ -25,7 +25,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12' # <--- UPDATED from 3.10 to 3.12 to support pandas-ta
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Install Dependencies
