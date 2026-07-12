@@ -81,7 +81,7 @@ def main():
 
     # Save to CSV for the scanner
     df_final = pd.DataFrame({'symbol': verified_symbols})
-    df_final.to_csv("python/nifty500.csv", index=False)
+    df_final.to_csv("nifty500.csv", index=False)
     print("Saved verified official list to python/nifty500.csv")
 
 if __name__ == "__main__":
