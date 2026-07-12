@@ -1,11 +1,12 @@
 import argparse
 import asyncio
 import datetime
+import sys
 from scanner import scan_universe
 from telegram_bot import send_premium_report
 from stock_universe import load_universe
-from telegram import Bot
 import config
+from telegram import Bot
 
 async def main():
     parser = argparse.ArgumentParser()
@@ -18,7 +19,7 @@ async def main():
     symbols = load_universe(args.universe)
     
     if not symbols:
-        print("❌ No symbols found for the selected universe. Exiting.")
+        print(f"❌ No symbols found for the selected universe: {args.universe}. Exiting.")
         return
 
     print(f"🚀 Starting Premium Scan for {args.universe} ({len(symbols)} stocks)...")
