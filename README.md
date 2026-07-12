@@ -1,25 +1,33 @@
-# TDMB Python – Telegram Weekly Breakout Scanner
+# 🚀 TDMB Premium Momentum System
 
-Quick start:
+A high-conviction stock scanning system for NSE India that combines **Multi-Timeframe RSI**, **Relative Strength (RS)**, and **Institutional Volume Footprints**.
 
-```bash
-pip install -r requirements.txt
-cp .env.example .env
-# edit TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
-# edit universe.csv – add your NSE symbols (no .NS)
+## 🎯 The Strategy (The 3/3 Rule)
+A stock is only flagged as a **PREMIUM BUY** when it hits a score of 3/3:
+1. **MTF-RSI Alignment (✅ Trend):** Daily, Weekly, and Monthly RSI must all be above 50.
+2. **Relative Strength (✅ Leadership):** The stock must be outperforming the Nifty 50 Index.
+3. **Volume Footprint (✅ Big Money):** Price must rise on volume $> 1.2\text{x}$ the 20-day average.
 
-python risk_calculator.py -e 2980 -s 2880
-python scanner.py
-python main.py --scan --send
-```
+## 🛠️ Setup Instructions
 
-Bot commands:
-- /scan
-- /risk SYMBOL ENTRY SL
-- /status
+### 1. TradingView Setup
+- Copy the code from `pine/TDMB_Premium_MTF.pine`.
+- Open **TradingView** $\rightarrow$ **Pine Editor** $\rightarrow$ **Paste** $\rightarrow$ **Add to Chart**.
 
-Cron (IST):
-```
-50 9 * * 5 cd /path/topdown-trader/python && python3 main.py --scan --send
-30 4 * * 0 cd /path/topdown-trader/python && python3 main.py --send-last
-```
+### 2. GitHub Setup (Automation)
+- Create a new private repository on GitHub.
+- Upload all files from this project.
+- Go to **Settings** $\rightarrow$ **Secrets and Variables** $\rightarrow$ **Actions**.
+- Add the following **Repository Secrets**:
+  - `TELEGRAM_BOT_TOKEN`: Your BotFather token.
+  - `TELEGRAM_CHAT_ID`: Your unique chat ID.
+
+### 3. Trading Plan
+- **Entry:** Buy when the bot sends a `3/3 Premium Signal`.
+- **Stop Loss:** Low of the breakout candle or 10% below entry.
+- **Exit:** 
+  - Partial profit when Daily RSI > 75.
+  - Full exit when Daily RSI < 40 or RS Line drops below its SMA.
+
+## 📜 License
+MIT
