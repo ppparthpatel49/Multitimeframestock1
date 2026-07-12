@@ -1,9 +1,9 @@
 import argparse
 import asyncio
 import datetime
-from python.scanner import scan_universe
-from python.telegram_bot import send_premium_report
-from python.stock_universe import load_universe
+from scanner import scan_universe
+from telegram_bot import send_premium_report
+from stock_universe import load_universe
 from telegram import Bot
 import config
 
